@@ -560,6 +560,18 @@ export class Toolbar {
       this.isDragging = false;
     });
 
+    // Copy command button
+    const copyBtn = this.shadow?.querySelector('#copy-cmd-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText('wcb').then(() => {
+          const original = copyBtn.textContent;
+          copyBtn.textContent = '已复制!';
+          setTimeout(() => { copyBtn.textContent = original || '运行 wcb 启动服务'; }, 1500);
+        });
+      });
+    }
+
     this.loadPositionAsync();
   }
 
@@ -572,6 +584,12 @@ export class Toolbar {
     if (!dot) return;
     dot.className = `status-dot ${connected ? 'connected' : 'disconnected'}`;
     dot.title = connected ? '已连接' : '未连接';
+
+    // Show/hide disconnected hint
+    const hint = this.shadow?.querySelector('#disconnected-hint') as HTMLElement;
+    if (hint) {
+      hint.style.display = connected ? 'none' : 'inline';
+    }
   }
 
   showStatus(status: 'idle' | 'detecting' | 'executing' | 'injecting' | 'waiting' | 'failed', toolName?: string): void {
@@ -1013,6 +1031,27 @@ export class Toolbar {
         .status-dot { background: rgba(0, 0, 0, 0.15); }
         .status-dot.connected { background: rgba(34, 197, 94, 0.8); box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
         .status-dot.disconnected { background: rgba(239, 68, 68, 0.8); }
+      .disconnected-hint { color: rgba(239, 68, 68, 0.8); }
+      .disconnected-hint {
+        font-size: 11px;
+        color: rgba(239, 68, 68, 0.9);
+        margin-left: 4px;
+        white-space: nowrap;
+      }
+      .copy-cmd-btn {
+        cursor: pointer;
+        text-decoration: underline;
+        color: rgba(96, 165, 250, 0.95);
+      }
+      .copy-cmd-btn:hover { color: rgba(59, 130, 246, 1); }
+      .gh-pages-link {
+        font-size: 14px;
+        text-decoration: none;
+        margin-left: 4px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+      .gh-pages-link:hover { opacity: 1; }
         .separator { background: rgba(0, 0, 0, 0.1); }
         .work-dir-input { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.85); }
         .work-dir-input::placeholder { color: rgba(0, 0, 0, 0.3); }
@@ -1040,6 +1079,9 @@ export class Toolbar {
     return `
       <span class="title">Web Chat Bridge</span>
       <span class="status-dot" id="status-dot" title="未连接"></span>
+      <span class="disconnected-hint" id="disconnected-hint" style="display:none;">
+        未连接 · <span class="copy-cmd-btn" id="copy-cmd-btn" title="复制启动命令">运行 wcb 启动服务</span>
+      </span>
       <div class="separator"></div>
       <div class="work-dir-wrapper">
         <div class="work-dir-row">
@@ -1067,6 +1109,7 @@ export class Toolbar {
           </div>
         </div>
       </div>
+      <a class="gh-pages-link" href="https://wsyb.github.io/WebChatBridge/" target="_blank" title="访问文档">📄</a>
       <button class="action-btn" id="inject-prompt">注入提示词</button>
     `;
   }

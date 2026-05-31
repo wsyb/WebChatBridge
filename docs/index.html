@@ -307,28 +307,28 @@ def hello():
                 <div class="step-num">1</div>
                 <div class="step-content">
                     <h4>下载</h4>
-                    <p>前往 <a href="https://github.com/wsyb/WebChatBridge/releases">GitHub Releases</a>，下载对应平台的 Native Host 和 Chrome 扩展</p>
+                    <p>前往 <a href="https://github.com/wsyb/WebChatBridge/releases">GitHub Releases</a>，下载 Native Host（<code>wcb</code>）和 Chrome 扩展</p>
                 </div>
             </div>
             <div class="step">
                 <div class="step-num">2</div>
                 <div class="step-content">
                     <h4>安装 Native Host</h4>
-                    <p>解压下载的文件，运行 <code>install.sh</code>（Linux/macOS）或 <code>install.bat</code>（Windows）</p>
+                    <p>将 <code>wcb</code> 复制到 PATH 目录：<br><code>cp wcb ~/.local/bin/ && chmod +x ~/.local/bin/wcb</code>（Linux/macOS）<br><code>Copy-Item wcb.exe $env:LOCALAPPDATA\Microsoft\WindowsApps\</code>（Windows）</p>
                 </div>
             </div>
             <div class="step">
                 <div class="step-num">3</div>
                 <div class="step-content">
                     <h4>加载 Chrome 扩展</h4>
-                    <p>打开 <code>chrome://extensions/</code>，启用开发者模式，点击「加载已解压的扩展程序」，选择扩展目录</p>
+                    <p>打开 <code>chrome://extensions/</code>，启用开发者模式，点击「加载已解压的扩展程序」</p>
                 </div>
             </div>
             <div class="step">
                 <div class="step-num">4</div>
                 <div class="step-content">
-                    <h4>开始使用</h4>
-                    <p>打开 AI 聊天页面，点击工具栏图标注入提示词，然后告诉 AI 你想做什么</p>
+                    <h4>启动并使用</h4>
+                    <p>终端运行 <code>wcb</code> 启动服务器，然后打开 AI 聊天页面，点击工具栏图标注入提示词</p>
                 </div>
             </div>
         </div>

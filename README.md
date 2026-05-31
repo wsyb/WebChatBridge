@@ -34,38 +34,57 @@ AI 通过输出特定格式的代码块来下达指令，浏览器扩展检测�
 
 详细架构说明见 [docs/architecture.md](docs/architecture.md)
 
-## 安装
+## 快速安装
 
-### 1. 加载 Chrome 扩展
+### 第一步：下载
 
-1. 打开 Chrome，访问 `chrome://extensions/`
-2. 启用"开发者模式"
-3. 点击"加载已解压的扩展程序"
-4. 选择 `extension` 目录
-5. 复制扩展 ID（32 位字母字符串）
+前往 [GitHub Releases](https://github.com/wsyb/WebChatBridge/releases) 下载：
 
-### 2. 编译并安装 Native Host
+- **Native Host**：选择对应你操作系统的 `wcb` 二进制文件
+- **Chrome 扩展**：下载 `webchatbridge-extension.zip`
+
+### 第二步：安装 Native Host
+
+将 `wcb` 复制到你的 PATH 目录：
+
+**Linux / macOS：**
 
 ```bash
-cd native-host
+# 创建目录（如果不存在）
+mkdir -p ~/.local/bin
 
-# 编译
-cargo build --release
-
-# 安装（会提示输入扩展 ID）
-./install.sh
+# 复制并赋予执行权限
+cp wcb ~/.local/bin/wcb
+chmod +x ~/.local/bin/wcb
 ```
 
-Windows 用户用 `install.bat` 替代 `install.sh`。
+**Windows (PowerShell)：**
 
-### 3. 使用
+```powershell
+# 复制到 PATH 目录
+Copy-Item wcb.exe $env:LOCALAPPDATA\Microsoft\WindowsApps\
+```
+
+### 第三步：加载 Chrome 扩展
+
+1. 打开 Chrome，访问 `chrome://extensions/`
+2. 启用「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择解压后的扩展目录
+
+### 第四步：启动并使用
+
+```bash
+# 启动 Native Host 服务器
+wcb
+```
+
+然后：
 
 1. 打开 DeepSeek / Kimi / 豆包的网页
 2. 页面顶部出现浮动工具栏
-3. 点击"注入提示词"
+3. 点击「注入提示词」
 4. 在对话框输入你的需求，AI 会自动执行
-
-详细安装说明见 [docs/installation.md](docs/installation.md)
 
 ## 可用工具
 

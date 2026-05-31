@@ -9,6 +9,7 @@
 
 export interface ToolbarCallbacks {
   onInjectPrompt?: () => void;
+  onInjectBrowserPrompt?: () => void;
   onTaskList?: () => Promise<TaskInfo[]>;
   onTaskLogs?: (taskId: string) => Promise<{ stdout: string; stderr: string }>;
   onTaskKill?: (taskId: string) => Promise<void>;
@@ -144,6 +145,10 @@ export class Toolbar {
     this.shadow.querySelector('#inject-prompt')?.addEventListener('click', () => {
       if (!this.workDir) { this.showWorkDirError('请先填写工作目录'); return; }
       callbacks.onInjectPrompt?.();
+    });
+
+    this.shadow.querySelector('#inject-browser-prompt')?.addEventListener('click', () => {
+      callbacks.onInjectBrowserPrompt?.();
     });
 
     // ▾ 下拉按钮
@@ -1076,7 +1081,8 @@ export class Toolbar {
           </div>
         </div>
       </div>
-      <button class="action-btn" id="inject-prompt">注入提示词</button>
+      <button class="action-btn" id="inject-prompt">注入本机操控能力</button>
+        <button class="action-btn action-btn-browser" id="inject-browser-prompt">注入浏览器操控能力</button>
     `;
   }
 }

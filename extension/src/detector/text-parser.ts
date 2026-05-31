@@ -25,20 +25,7 @@ import type { ParsedToolCall } from './types';
  * Debug logging gated by environment. Set WEBAI_DEBUG=1 to enable.
  */
 
-const VALID_TOOLS: readonly string[] = [
-  'ls',
-  'read',
-  'write',
-  'edit',
-  'grep',
-  'glob',
-  'run_shell_command',
-  'task_start',
-  'task_list',
-  'task_logs',
-  'task_kill',
-  'task_restart',
-];
+
 
 const TOOL_CALL_SEPARATOR = '===';
 const PARAM_SEPARATOR = '---';
@@ -50,20 +37,11 @@ const MULTILINE_END = '>>>';
  * Returns true if the text contains `===` followed by a known tool name.
  */
 export function isTextProtocol(text: string): boolean {
-  // Look for `===` followed by a line containing a known tool name
-  // Also handle cases where button texts are concatenated (e.g., "tool_call复制下载===")
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    // Check if line contains === (possibly concatenated with other text)
     if (trimmed.includes(TOOL_CALL_SEPARATOR)) {
-      // Check if the next non-empty line is a tool name
-      for (let j = i + 1; j < lines.length && j < i + 3; j++) {
-        const nextLine = lines[j].trim();
-        if (nextLine === '') continue;
-        if (VALID_TOOLS.includes(nextLine)) return true;
-        break;
-      }
+      return true;
     }
   }
   return false;
@@ -95,10 +73,8 @@ export function parseTextToolCalls(text: string): ParsedToolCall[] {
       const line = lines[i].trim();
       i++;
       if (line === '') continue;
-      if (VALID_TOOLS.includes(line)) {
-        toolName = line;
+      toolName = line;
         break;
-      }
     }
 
     if (!toolName) continue;

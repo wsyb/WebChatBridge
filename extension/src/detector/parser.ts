@@ -8,20 +8,7 @@ import { isTextProtocol, parseTextToolCalls } from './text-parser';
 /**
  * Valid tool names that we recognize.
  */
-const VALID_TOOLS: readonly string[] = [
-  'ls',
-  'read',
-  'write',
-  'edit',
-  'grep',
-  'glob',
-  'run_shell_command',
-  'task_start',
-  'task_list',
-  'task_logs',
-  'task_kill',
-  'task_restart',
-];
+
 
 /**
  * Placeholder keywords found in prompt templates / examples.
@@ -153,12 +140,8 @@ function fixLiteralNewlines(jsonStr: string): string {
 // Placeholder detection
 // ---------------------------------------------------------------------------
 
-/**
- * Check whether a text string looks like a placeholder/template example.
- */
-export function isPlaceholder(text: string): boolean {
-  const lower = text.toLowerCase();
-  return PLACEHOLDER_KEYWORDS.some((kw) => lower.includes(kw));
+export function isPlaceholder(_text: string): boolean {
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,7 +184,7 @@ export function normalizeToolCall(raw: Record<string, unknown>): ParsedToolCall 
  * 1. Text protocol: `===` separated tool calls with `---` params and `<<<`/`>>>` multiline
  * 2. JSON protocol: `tool_call{...}` with JSON objects (legacy)
  *
- * Only calls whose name is in `VALID_TOOLS` are kept.
+ * All tools registered in ToolRegistry are accepted.
  */
 export function parseToolCallsFromText(text: string): ParsedToolCall[] {
   // Text protocol: check for `===` + known tool name pattern
@@ -244,7 +227,7 @@ export function parseToolCallsFromText(text: string): ParsedToolCall[] {
       const call = normalizeToolCall(rawCall);
 
       // Only accept known tool names with valid arguments
-      if (call.name && VALID_TOOLS.includes(call.name)) {
+      if (call.name) {
         if (!call.arguments || typeof call.arguments !== 'object') {
           call.arguments = {};
         }

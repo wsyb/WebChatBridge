@@ -3,6 +3,7 @@
  */
 
 import { Logger } from '../core/logger.js';
+import { handleBrowserTool } from './browser-tools.js';
 import { globalConfig } from '../core/config.js';
 
 const logger = new Logger('Background');
@@ -37,7 +38,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // ============================================================
-// 连接检查（直接查 localhost，不经过 content script）
+// 连接检查
 // ============================================================
 
 async function checkHealth(): Promise<boolean> {
@@ -55,7 +56,36 @@ async function checkHealth(): Promise<boolean> {
 }
 
 // ============================================================
-// 消息监听
+// 端口通信（浏览器工具 + 通用消息）
+// ============================================================
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'wcb-port') return;
+
+  logger.info('Content script connected via port');
+
+  port.onMessage.addListener(async (message) => {
+    if (message.type === 'BROWSER_TOOL') {
+      try {
+        const result = await handleBrowserTool(message.request);
+        port.postMessage({ id: message.id, type: 'BROWSER_TOOL_RESULT', result });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        port.postMessage({ id: message.id, type: 'BROWSER_TOOL_RESULT', result: { success: false, error: msg } });
+      }
+    } else if (message.type === 'GET_STATUS') {
+      const connected = await checkHealth();
+      port.postMessage({ id: message.id, type: 'STATUS_RESULT', connected });
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    logger.info('Content script disconnected');
+  });
+});
+
+// ============================================================
+// 兼容：也保留 onMessage 监听（popup 等可能还在用）
 // ============================================================
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -63,7 +93,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     checkHealth().then((connected) => {
       sendResponse({ connected });
     });
-    return true; // 异步 sendResponse
+    return true;
   }
 
   if (message.type === 'OPEN_OPTIONS') {
@@ -76,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 // ============================================================
-// 扩展图标点击（有 popup 时不会触发，保留作为 fallback）
+// 扩展图标点击
 // ============================================================
 
 chrome.action.onClicked.addListener((tab) => {

@@ -18,9 +18,23 @@ import task_logs from './impl/task_logs.js';
 import task_kill from './impl/task_kill.js';
 import task_restart from './impl/task_restart.js';
 
+// Browser tools
+import {
+  browser_list_tabs,
+  browser_create_tab,
+  browser_close_tab,
+  browser_switch_tab,
+  browser_navigate,
+} from '../browser/tools/index.js';
+
 export function createDefaultRegistry(): ToolRegistry {
   const registry = new ToolRegistry();
+  // Local machine tools
   for (const tool of [ls, read, write, edit, grep, glob, shell, task_start, task_list, task_logs, task_kill, task_restart]) {
+    registry.register(tool);
+  }
+  // Browser tools
+  for (const tool of [browser_list_tabs, browser_create_tab, browser_close_tab, browser_switch_tab, browser_navigate]) {
     registry.register(tool);
   }
   return registry;

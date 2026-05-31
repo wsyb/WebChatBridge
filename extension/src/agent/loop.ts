@@ -15,7 +15,7 @@
 import { Logger } from '../core/logger';
 import type { Adapter } from '../adapters/types';
 import type { ToolCall, ToolResult } from '../core/types';
-import { httpClient } from '../core/http-client';
+import type { ToolExecutor } from '../tools/executor.js';
 import { AgentStorage } from './storage';
 import { parseToolCallsFromText } from '../detector/parser';
 
@@ -52,6 +52,7 @@ export class AgentLoop {
   private callbacks: AgentCallbacks;
 
   private _state: AgentState = 'idle';
+  private executor: ToolExecutor;
   private _currentToolCall: ToolCall | null = null;
   private _isRunning = false;
   private _stopRequested = false;
@@ -60,10 +61,12 @@ export class AgentLoop {
   constructor(
     adapter: Adapter,
     storage: AgentStorage,
+    executor: ToolExecutor,
     callbacks: AgentCallbacks = {},
   ) {
     this.adapter = adapter;
     this.storage = storage;
+    this.executor = executor;
     this.callbacks = callbacks;
   }
 
@@ -286,7 +289,7 @@ export class AgentLoop {
     try {
       // 执行工具
       const result = await Promise.race([
-        httpClient.executeTool(toolCall),
+        this.executor.execute(toolCall),
         this.createTimeout(EXECUTE_TIMEOUT_MS, 'Tool execution timeout'),
       ]);
 

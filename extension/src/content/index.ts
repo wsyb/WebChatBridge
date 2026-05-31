@@ -16,7 +16,8 @@ import { Toolbar } from './toolbar.js';
 
 import { AgentLoop } from '../agent/loop.js';
 import { AgentStorage } from '../agent/storage.js';
-import { getSystemPrompt } from '../prompts/index.js';
+import { createDefaultExecutor } from '../tools/index.js';
+import { getSystemPrompt, getBrowserSystemPrompt } from '../prompts/index.js';
 
 // ============================================================
 // 防止重复注入
@@ -96,6 +97,9 @@ async function doInitialize(logger: Logger): Promise<void> {
     onInjectPrompt: () => {
       injectPrompt(state, adapterManager, logger, toolbar);
     },
+    onInjectBrowserPrompt: () => {
+      injectBrowserPrompt(state, adapterManager, logger, toolbar);
+    },
     onTaskList: async () => {
       const result = await httpClient.taskList();
       if (result.success && result.data) {
@@ -136,7 +140,8 @@ async function doInitialize(logger: Logger): Promise<void> {
   // ============================================================
   // 初始化 Agent Loop（核心循环）
   // ============================================================
-  const agentLoop = new AgentLoop(adapter, storage, {
+  const executor = createDefaultExecutor();
+  const agentLoop = new AgentLoop(adapter, storage, executor, {
     onStateChanged: (agentState, toolName) => {
       toolbar.showStatus(agentState, toolName);
     },
@@ -213,6 +218,39 @@ async function injectPrompt(
   }
 }
 
+
+// ============================================================
+// 注入浏览器操控能力提示词
+// ============================================================
+
+async function injectBrowserPrompt(
+  _state: StateManager,
+  adapterManager: AdapterManager,
+  logger: Logger,
+  toolbar: Toolbar,
+): Promise<void> {
+  const adapter = adapterManager.getAdapter();
+  if (!adapter) {
+    logger.error('No adapter available');
+    return;
+  }
+
+  const input = adapter.findInput();
+  if (!input) {
+    logger.error('No input found');
+    return;
+  }
+
+  const workDir = toolbar.getWorkDir();
+  const prompt = await getBrowserSystemPrompt(workDir, adapter.name);
+
+  const injected = adapter.injectTextSafely(prompt);
+  if (injected) {
+    logger.info('Browser system prompt injected');
+  } else {
+    logger.error('Failed to inject browser system prompt');
+  }
+}
 
 
 // ============================================================

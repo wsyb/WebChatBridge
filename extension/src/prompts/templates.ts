@@ -377,7 +377,7 @@ cd {{workDir}} && ls
 - 回复简洁，不要啰嗦
 - 收到执行结果后分析是否正确，再决定下一步
 - 任务完成后简单总结做了什么
-```
+`
 
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
   { name: 'deepseek', label: 'DeepSeek', defaultPrompt: DEFAULT_PROMPT },

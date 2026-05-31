@@ -12,7 +12,7 @@ AI 通过输出特定格式的代码块来下达指令，浏览器扩展检测�
 
 | 平台 | 状态 |
 |------|------|
-| [DeepSeek](https://chat.deepseek.com) | ✅ 完整支持 |
+| [DeepSeek](https://chat.deepseek.com) | ✅ 完整支持（最佳兼容） |
 | [Kimi](https://kimi.moonshot.cn) | ✅ 完整支持 |
 | [豆包](https://www.doubao.com) | ✅ 完整支持 |
 

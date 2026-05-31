@@ -1,152 +1,167 @@
 /**
  * Options 页面逻辑
- * 管理每个 adapter 平台的独立 prompt 配置
+ * 连接设置 + 提示词编辑
  */
 
-import { getDefaultPrompt, PROMPT_TEMPLATES } from '../prompts/templates.js';
+import { globalConfig } from '../core/config.js';
 
-// ============================================================
-// Storage key
-// ============================================================
-
-const STORAGE_PREFIX = 'customPrompt_';
-
-function getStorageKey(adapterName: string): string {
-  return `${STORAGE_PREFIX}${adapterName}`;
+interface PromptTemplate {
+  name: string;
+  label: string;
+  defaultPrompt: string;
 }
 
-// ============================================================
-// DOM
-// ============================================================
+// Prompt templates will be loaded dynamically
+const PROMPT_TEMPLATES: PromptTemplate[] = [];
 
-const tabsEl = document.getElementById('platform-tabs')!;
-const editorEl = document.getElementById('prompt-editor') as HTMLTextAreaElement;
-const labelEl = document.getElementById('current-adapter-label')!;
-const saveBtn = document.getElementById('save-btn')!;
-const resetBtn = document.getElementById('reset-btn')!;
-const statusMsg = document.getElementById('status-msg')!;
-
-// ============================================================
-// 状态
-// ============================================================
-
-let currentAdapter: string = PROMPT_TEMPLATES[0].name;
+let currentPlatformIndex = 0;
+let customPrompts: Record<string, string> = {};
 
 // ============================================================
 // 初始化
 // ============================================================
 
-function init(): void {
-  renderTabs();
-  switchAdapter(PROMPT_TEMPLATES[0].name);
+document.addEventListener('DOMContentLoaded', async () => {
+  await globalConfig.initialize();
+  loadConnectionSettings();
+  await loadPromptTemplates();
+  renderPlatformTabs();
+  loadCustomPrompts();
   bindEvents();
-}
-
-function renderTabs(): void {
-  tabsEl.innerHTML = PROMPT_TEMPLATES.map((t) => {
-    const active = t.name === currentAdapter ? ' active' : '';
-    return `<div class="platform-tab${active}" data-adapter="${t.name}">${t.label}</div>`;
-  }).join('');
-}
-
-function bindEvents(): void {
-  // 平台切换
-  tabsEl.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const tab = target.closest('.platform-tab') as HTMLElement;
-    if (!tab) return;
-    switchAdapter(tab.dataset.adapter!);
-  });
-
-  // 保存
-  saveBtn.addEventListener('click', () => save());
-
-  // 重置
-  resetBtn.addEventListener('click', () => reset());
-}
+});
 
 // ============================================================
-// 切换平台
+// 连接设置
 // ============================================================
 
-async function switchAdapter(name: string): Promise<void> {
-  currentAdapter = name;
+function loadConnectionSettings(): void {
+  const hostInput = document.getElementById('native-host') as HTMLInputElement;
+  const portInput = document.getElementById('native-port') as HTMLInputElement;
 
-  // 更新 tab 样式
-  tabsEl.querySelectorAll('.platform-tab').forEach((tab) => {
-    tab.classList.toggle('active', (tab as HTMLElement).dataset.adapter === name);
-  });
-
-  // 更新标签
-  const template = PROMPT_TEMPLATES.find((t) => t.name === name);
-  labelEl.textContent = template?.label ?? name;
-
-  // 加载 prompt
-  const prompt = await loadPrompt(name);
-  editorEl.value = prompt;
-
-  hideStatus();
+  if (hostInput) hostInput.value = globalConfig.get('nativeHost');
+  if (portInput) portInput.value = String(globalConfig.get('nativeHostPort'));
 }
 
-// ============================================================
-// 加载 / 保存 / 重置
-// ============================================================
+function saveConnectionSettings(): void {
+  const hostInput = document.getElementById('native-host') as HTMLInputElement;
+  const portInput = document.getElementById('native-port') as HTMLInputElement;
 
-async function loadPrompt(adapterName: string): Promise<string> {
-  try {
-    const data = await chrome.storage.local.get(getStorageKey(adapterName));
-    if (data[getStorageKey(adapterName)]) {
-      return data[getStorageKey(adapterName)];
-    }
-  } catch {
-    // ignore
-  }
-  return getDefaultPrompt(adapterName);
-}
+  const host = hostInput?.value.trim() || '127.0.0.1';
+  const port = parseInt(portInput?.value || '18789', 10);
 
-async function save(): Promise<void> {
-  const prompt = editorEl.value.trim();
-  if (!prompt) {
-    showStatus('提示词不能为空', 'error');
+  if (port < 1 || port > 65535) {
+    showStatus('端口范围应为 1-65535', false);
     return;
   }
 
+  globalConfig.update({
+    nativeHost: host,
+    nativeHostPort: port,
+  });
+}
+
+// ============================================================
+// 提示词设置
+// ============================================================
+
+async function loadPromptTemplates(): Promise<void> {
+  // Dynamic import to get templates
   try {
-    await chrome.storage.local.set({ [getStorageKey(currentAdapter)]: prompt });
-    showStatus('已保存', 'success');
-  } catch (e) {
-    showStatus('保存失败: ' + String(e), 'error');
+    const mod = await import('../prompts/templates.js');
+    const templates = mod.PROMPT_TEMPLATES || [];
+    PROMPT_TEMPLATES.length = 0;
+    PROMPT_TEMPLATES.push(...templates);
+  } catch {
+    // Fallback: empty templates
   }
 }
 
-async function reset(): Promise<void> {
-  const defaultPrompt = getDefaultPrompt(currentAdapter);
+function renderPlatformTabs(): void {
+  const container = document.getElementById('platform-tabs');
+  if (!container) return;
 
-  try {
-    await chrome.storage.local.remove(getStorageKey(currentAdapter));
-    editorEl.value = defaultPrompt;
-    showStatus('已重置为默认', 'success');
-  } catch (e) {
-    showStatus('重置失败: ' + String(e), 'error');
+  container.innerHTML = PROMPT_TEMPLATES.map((t, i) =>
+    `<div class="platform-tab ${i === currentPlatformIndex ? 'active' : ''}" data-index="${i}">${t.label}</div>`
+  ).join('');
+
+  container.querySelectorAll('.platform-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentPlatformIndex = parseInt(tab.getAttribute('data-index') || '0', 10);
+      renderPlatformTabs();
+      loadPromptForCurrentPlatform();
+    });
+  });
+
+  loadPromptForCurrentPlatform();
+}
+
+function loadCustomPrompts(): void {
+  chrome.storage.local.get(['wcb_custom_prompts'], (result) => {
+    customPrompts = result['wcb_custom_prompts'] || {};
+    loadPromptForCurrentPlatform();
+  });
+}
+
+function loadPromptForCurrentPlatform(): void {
+  const template = PROMPT_TEMPLATES[currentPlatformIndex];
+  if (!template) return;
+
+  const editor = document.getElementById('prompt-editor') as HTMLTextAreaElement;
+  const label = document.getElementById('current-adapter-label');
+
+  if (editor) {
+    editor.value = customPrompts[template.name] || template.defaultPrompt;
+  }
+  if (label) {
+    label.textContent = template.label;
   }
 }
 
-// ============================================================
-// 状态提示
-// ============================================================
+function saveCurrentPrompt(): void {
+  const template = PROMPT_TEMPLATES[currentPlatformIndex];
+  if (!template) return;
 
-function showStatus(msg: string, type: 'success' | 'error'): void {
-  statusMsg.textContent = msg;
-  statusMsg.className = `status-msg show ${type}`;
-  setTimeout(() => hideStatus(), 2500);
+  const editor = document.getElementById('prompt-editor') as HTMLTextAreaElement;
+  if (!editor) return;
+
+  customPrompts[template.name] = editor.value;
+  chrome.storage.local.set({ wcb_custom_prompts: customPrompts });
 }
 
-function hideStatus(): void {
-  statusMsg.className = 'status-msg';
+function resetCurrentPrompt(): void {
+  const template = PROMPT_TEMPLATES[currentPlatformIndex];
+  if (!template) return;
+
+  const editor = document.getElementById('prompt-editor') as HTMLTextAreaElement;
+  if (editor) {
+    editor.value = template.defaultPrompt;
+  }
+
+  delete customPrompts[template.name];
+  chrome.storage.local.set({ wcb_custom_prompts: customPrompts });
 }
 
 // ============================================================
-// 启动
+// UI
 // ============================================================
 
-init();
+function showStatus(msg: string, success: boolean): void {
+  const el = document.getElementById('status-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `status-msg show ${success ? 'success' : 'error'}`;
+  setTimeout(() => { el.className = 'status-msg'; }, 2000);
+}
+
+function bindEvents(): void {
+  document.getElementById('save-btn')?.addEventListener('click', () => {
+    saveConnectionSettings();
+    saveCurrentPrompt();
+    showStatus('已保存', true);
+  });
+
+  document.getElementById('reset-btn')?.addEventListener('click', () => {
+    resetCurrentPrompt();
+    showStatus('已重置为默认', true);
+  });
+}

@@ -11,7 +11,6 @@ import { LogLevel, type LogEntry } from './types.js';
 
 const STORAGE_KEY = 'wcb_log_level';
 const MAX_LOGS = 500;
-const LOG_ENDPOINT_PORT = 18789;
 
 // ============================================================
 // 日志管理器
@@ -82,7 +81,8 @@ class LogManager {
         data: dataStr,
       });
 
-      fetch(`http://localhost:${LOG_ENDPOINT_PORT}/api/log`, {
+      // Use hardcoded default, config will be used by httpClient
+      fetch('http://127.0.0.1:18789/api/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,

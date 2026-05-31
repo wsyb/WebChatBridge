@@ -194,6 +194,8 @@ export interface ExtensionConfig {
   cooldownMs: number;
   maxProcessedHashes: number;
   nativeHostName: string;
+  nativeHost: string;
+  nativeHostPort: number;
   reconnectInterval: number;
   maxReconnectAttempts: number;
 }

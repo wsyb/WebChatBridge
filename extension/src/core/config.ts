@@ -16,6 +16,8 @@ const DEFAULT_CONFIG: ExtensionConfig = {
   cooldownMs: 3000,
   maxProcessedHashes: 50,
   nativeHostName: 'com.webchatbridge.host',
+  nativeHost: '127.0.0.1',
+  nativeHostPort: 18789,
   reconnectInterval: 2000,
   maxReconnectAttempts: 30,
 };

@@ -3,6 +3,10 @@ name = "wcb"
 version = "0.1.0"
 edition = "2021"
 description = "Native Messaging host for Web Chat Bridge Chrome extension"
+authors = ["Felix Yin <ybkk1027@163.com>"]
+license = "MIT"
+repository = "https://github.com/wsyb/WebChatBridge"
+homepage = "https://github.com/wsyb/WebChatBridge"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

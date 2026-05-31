@@ -3,6 +3,7 @@
  */
 
 import { Logger } from '../core/logger.js';
+import { globalConfig } from '../core/config.js';
 
 const logger = new Logger('Background');
 
@@ -41,9 +42,11 @@ chrome.runtime.onInstalled.addListener(() => {
 
 async function checkHealth(): Promise<boolean> {
   try {
+    const host = globalConfig.get('nativeHost');
+    const port = globalConfig.get('nativeHostPort');
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
-    const response = await fetch('http://localhost:18789/health', { signal: controller.signal });
+    const response = await fetch(`http://${host}:${port}/health`, { signal: controller.signal });
     clearTimeout(timer);
     return response.ok;
   } catch {

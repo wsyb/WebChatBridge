@@ -28,5 +28,15 @@
   },
   "dependencies": {
     "puppeteer": "^25.1.0"
+  },
+  "author": "Felix Yin <ybkk1027@163.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wsyb/WebChatBridge.git"
+  },
+  "homepage": "https://github.com/wsyb/WebChatBridge",
+  "bugs": {
+    "url": "https://github.com/wsyb/WebChatBridge/issues"
   }
 }

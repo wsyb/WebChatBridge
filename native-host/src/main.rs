@@ -9,13 +9,72 @@ use tool::ToolRegistry;
 use tool::task_manager::new_shared_task_manager;
 
 // ============================================================
+// CLI 参数
+// ============================================================
+
+struct CliArgs {
+    host: String,
+    port: u16,
+}
+
+fn parse_args() -> CliArgs {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut host = "127.0.0.1".to_string();
+    let mut port: u16 = 18789;
+
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--host" | "-h" => {
+                i += 1;
+                if i < args.len() {
+                    host = args[i].clone();
+                }
+            }
+            "--port" | "-p" => {
+                i += 1;
+                if i < args.len() {
+                    port = args[i].parse().unwrap_or_else(|_| {
+                        eprintln!("Invalid port: {}", args[i]);
+                        std::process::exit(1);
+                    });
+                }
+            }
+            "--help" => {
+                println!("WebChatBridge Native Host");
+                println!();
+                println!("Usage: wcb [OPTIONS]");
+                println!();
+                println!("Options:");
+                println!("  --host, -h <HOST>  Bind address (default: 127.0.0.1)");
+                println!("  --port, -p <PORT>  Listen port (default: 18789)");
+                println!("  --help             Show this help");
+                println!();
+                println!("Examples:");
+                println!("  wcb                          # Listen on 127.0.0.1:18789");
+                println!("  wcb --port 19999             # Listen on 127.0.0.1:19999");
+                println!("  wcb --host 0.0.0.0 --port 18789  # Listen on all interfaces");
+                std::process::exit(0);
+            }
+            _ => {
+                eprintln!("Unknown argument: {}. Use --help for usage.", args[i]);
+                std::process::exit(1);
+            }
+        }
+        i += 1;
+    }
+
+    CliArgs { host, port }
+}
+
+// ============================================================
 // Port file
 // ============================================================
 
 fn write_port_file(port: u16) {
     let dir = dirs::home_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-        .join(".web-ai-agent");
+        .join(".webchatbridge");
     let _ = std::fs::create_dir_all(&dir);
     let path = dir.join("port");
     match std::fs::write(&path, port.to_string()) {
@@ -27,7 +86,7 @@ fn write_port_file(port: u16) {
 fn remove_port_file() {
     let path = dirs::home_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-        .join(".web-ai-agent")
+        .join(".webchatbridge")
         .join("port");
     let _ = std::fs::remove_file(&path);
 }
@@ -37,16 +96,20 @@ fn remove_port_file() {
 // ============================================================
 
 fn main() {
+    // Parse CLI args
+    let args = parse_args();
+
     // Panic hook: log but don't crash
     std::panic::set_hook(Box::new(|info| {
         flog!("PANIC: {}", info);
     }));
 
     // Initialize logger
-    if let Some(logger) = log::init_logger("/tmp/web-ai-agent-native-debug.log") {
+    if let Some(logger) = log::init_logger("/tmp/webchatbridge-debug.log") {
         let _ = log::LOGGER.set(logger);
     }
     flog!("=== HTTP Server Starting ===");
+    flog!("Bind address: {}:{}", args.host, args.port);
 
     // Create tokio runtime
     let rt = match tokio::runtime::Builder::new_multi_thread()
@@ -61,11 +124,14 @@ fn main() {
         }
     };
 
+    let host = args.host;
+    let port = args.port;
+
     rt.block_on(async {
         // 创建 TaskManager
         let data_dir = dirs::home_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-            .join(".web-ai-agent")
+            .join(".webchatbridge")
             .join("tasks");
         let task_manager = new_shared_task_manager(data_dir);
         flog!("TaskManager initialized");
@@ -81,19 +147,24 @@ fn main() {
 
         let app = create_router(state);
 
-        // Fixed port 18789 — extension hardcodes this port
-        let port: u16 = 18789;
-        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        // Parse bind address
+        let addr: std::net::IpAddr = host.parse().unwrap_or_else(|_| {
+            eprintln!("Invalid host: {}", host);
+            std::process::exit(1);
+        });
+        let sock_addr = std::net::SocketAddr::new(addr, port);
 
-        let listener = match tokio::net::TcpListener::bind(addr).await {
+        let listener = match tokio::net::TcpListener::bind(sock_addr).await {
             Ok(l) => l,
             Err(e) => {
-                flog!("FATAL: Cannot bind port {}: {} — is another instance running?", port, e);
+                flog!("FATAL: Cannot bind {}:{} — {}", host, port, e);
+                eprintln!("FATAL: Cannot bind {}:{} — {}", host, port, e);
                 std::process::exit(1);
             }
         };
 
-        flog!("Listening on http://127.0.0.1:{}", port);
+        flog!("Listening on http://{}:{}", host, port);
+        println!("WebChatBridge listening on http://{}:{}", host, port);
         write_port_file(port);
 
         // Graceful shutdown on SIGTERM/SIGINT

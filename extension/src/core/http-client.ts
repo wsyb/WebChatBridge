@@ -3,9 +3,9 @@
  */
 
 import { Logger } from './logger.js';
+import { globalConfig } from './config.js';
 import type { SystemInfo, ToolCall, ToolResult } from './types.js';
 
-const DEFAULT_PORT = 18789;
 const HEALTH_TIMEOUT_MS = 3_000;
 const TOOL_TIMEOUT_MS = 120_000;
 
@@ -64,34 +64,35 @@ export class HttpClient {
   private circuitBreaker = new CircuitBreaker();
 
   /**
-   * 初始化：发现服务器端口
+   * 初始化：连接服务器
    */
   async init(): Promise<boolean> {
-    // 只尝试固定端口 18789
-    const ok = await this.tryPort(DEFAULT_PORT);
+    const host = globalConfig.get('nativeHost');
+    const port = globalConfig.get('nativeHostPort');
+    const ok = await this.tryHostPort(host, port);
     if (!ok) {
-      this.logger.warn('HTTP server not found on port ' + DEFAULT_PORT);
+      this.logger.warn(`HTTP server not found at ${host}:${port}`);
     }
     return ok;
   }
 
-  private async tryPort(port: number): Promise<boolean> {
+  private async tryHostPort(host: string, port: number): Promise<boolean> {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
 
-      const response = await fetch(`http://localhost:${port}/health`, {
+      const response = await fetch(`http://${host}:${port}/health`, {
         signal: controller.signal,
       });
       clearTimeout(timer);
 
       if (response.ok) {
-        this.baseUrl = `http://localhost:${port}`;
-        this.logger.info(`Connected to HTTP server on port ${port}`);
+        this.baseUrl = `http://${host}:${port}`;
+        this.logger.info(`Connected to HTTP server at ${host}:${port}`);
         return true;
       }
     } catch {
-      // 端口不可用
+      // 服务器不可用
     }
     return false;
   }

@@ -433,4 +433,47 @@ export class BaseAdapter implements Adapter {
       this._loadingElement = null;
     }
   }
+
+
+  /**
+   * 将图片粘贴到输入框（通过 DataTransfer + paste 事件）
+   * @param dataUrl base64 data URL (data:image/png;base64,...)
+   */
+  async injectImagePaste(dataUrl: string): Promise<boolean> {
+    const input = this.findInput();
+    if (!input) {
+      this.logger.error('injectImagePaste: No input found');
+      return false;
+    }
+
+    try {
+      // base64 → Blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Blob → File
+      const file = new File([blob], 'screenshot.png', { type: blob.type });
+
+      // File → DataTransfer
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+
+      // 构造 paste 事件
+      input.focus();
+      const pasteEvent = new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: dataTransfer,
+      });
+      input.dispatchEvent(pasteEvent);
+
+      this.logger.info('injectImagePaste: Image paste event dispatched');
+      return true;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`injectImagePaste failed: ${msg}`);
+      return false;
+    }
+  }
+
 }

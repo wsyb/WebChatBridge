@@ -322,11 +322,34 @@ export class AgentLoop {
       // 注入前先解锁输入框（execCommand 需要可编辑的 textarea）
       this.adapter.unlockInput();
 
-      // 格式化注入文本
-      const injectText = this.formatResult(toolCall, result);
+      // 检测是否是截图结果（含 imageData）
+      let injected = false;
+      if (toolCall.name === 'browser_screenshot' && result.content) {
+        try {
+          const data = JSON.parse(result.content);
+          if (data.imageData && data.imageData.startsWith('data:image/')) {
+            // 图片粘贴：先发送文字说明，再粘贴图片
+            const textMsg = `[工具执行结果: ${toolCall.name}]\n截图已粘贴到输入框。URL: ${data.url || ''}, 标题: ${data.title || ''}\n[/工具执行结果]`;
+            injected = this.adapter.injectTextSafely(textMsg);
+            if (injected) {
+              await this.delay(300);
+              await this.adapter.injectImagePaste(data.imageData);
+            }
+          }
+        } catch {
+          // JSON 解析失败，走文字路径
+        }
+      }
 
-      // 注入到输入框
-      const injected = this.adapter.injectTextSafely(injectText);
+      // 非截图或图片粘贴失败：走文字注入路径
+      if (!injected) {
+        // 格式化注入文本
+        const injectText = this.formatResult(toolCall, result);
+
+        // 注入到输入框
+        injected = this.adapter.injectTextSafely(injectText);
+      }
+
       if (!injected) {
         // 标记为已完成，防止无限重试
         await this.storage.markCompleted(this._conversationId, hash);

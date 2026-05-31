@@ -16,7 +16,8 @@
     "https://kimi.moonshot.cn/*",
     "https://www.kimi.com/*",
     "https://chat.deepseek.com/*",
-    "https://www.doubao.com/*"
+    "https://www.doubao.com/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",

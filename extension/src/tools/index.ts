@@ -25,6 +25,12 @@ import {
   browser_close_tab,
   browser_switch_tab,
   browser_navigate,
+  browser_screenshot,
+  browser_get_page_content,
+  browser_evaluate_js,
+  browser_search_elements,
+  browser_click,
+  browser_fill,
 } from '../browser/tools/index.js';
 
 export function createDefaultRegistry(): ToolRegistry {
@@ -34,7 +40,7 @@ export function createDefaultRegistry(): ToolRegistry {
     registry.register(tool);
   }
   // Browser tools
-  for (const tool of [browser_list_tabs, browser_create_tab, browser_close_tab, browser_switch_tab, browser_navigate]) {
+  for (const tool of [browser_list_tabs, browser_create_tab, browser_close_tab, browser_switch_tab, browser_navigate, browser_screenshot, browser_get_page_content, browser_evaluate_js, browser_search_elements, browser_click, browser_fill]) {
     registry.register(tool);
   }
   return registry;

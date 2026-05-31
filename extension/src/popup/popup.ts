@@ -1,6 +1,6 @@
 /**
  * Popup 逻辑模块
- * 连接状态、工具栏开关、设置入口
+ * 连接状态、启动命令提示、工具栏开关、设置入口
  */
 
 interface StatusResponse {
@@ -11,12 +11,16 @@ const REFRESH_INTERVAL_MS = 5000;
 
 export class PopupController {
   private connectionStatusEl: HTMLElement | null = null;
+  private startCmdEl: HTMLElement | null = null;
+  private copyBtnEl: HTMLElement | null = null;
   private toggleToolbarEl: HTMLInputElement | null = null;
   private settingsBtn: HTMLElement | null = null;
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   initialize(): void {
     this.connectionStatusEl = document.getElementById('connection-status');
+    this.startCmdEl = document.getElementById('start-cmd');
+    this.copyBtnEl = document.getElementById('copy-cmd-btn');
     this.toggleToolbarEl = document.getElementById('toggle-toolbar') as HTMLInputElement;
     this.settingsBtn = document.getElementById('open-settings');
 
@@ -39,6 +43,10 @@ export class PopupController {
 
     this.settingsBtn?.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
+    });
+
+    this.copyBtnEl?.addEventListener('click', () => {
+      this.copyCommand();
     });
   }
 
@@ -76,6 +84,26 @@ export class PopupController {
       this.connectionStatusEl.textContent = '未连接';
       this.connectionStatusEl.className = 'status disconnected';
     }
+
+    // Show/hide start command hint
+    if (this.startCmdEl) {
+      this.startCmdEl.className = connected ? 'start-cmd' : 'start-cmd visible';
+    }
+  }
+
+  private copyCommand(): void {
+    navigator.clipboard.writeText('wcb').then(() => {
+      if (this.copyBtnEl) {
+        this.copyBtnEl.textContent = '已复制';
+        this.copyBtnEl.className = 'copy-btn copied';
+        setTimeout(() => {
+          if (this.copyBtnEl) {
+            this.copyBtnEl.textContent = '复制';
+            this.copyBtnEl.className = 'copy-btn';
+          }
+        }, 1500);
+      }
+    });
   }
 
   private toggleToolbar(): void {

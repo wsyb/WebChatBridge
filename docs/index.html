@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Chat Bridge</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a1a;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #6366f1, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+    .hero-btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: 10px;
+      color: #a5b4fc;
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .hero-btn:hover {
+      background: rgba(99, 102, 241, 0.3);
+      transform: translateY(-2px);
+    }
+
+    /* Section */
+    section {
+      padding: 60px 0;
+    }
+    section h2 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    /* Features */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .feature {
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+    }
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .feature p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Screenshots */
+    .screenshots {
+      text-align: center;
+    }
+    .screenshots-placeholder {
+      width: 100%;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 14px;
+    }
+
+    /* Installation */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #a5b4fc;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Download */
+    .download-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    .download-card {
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .download-card h3 {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+    .download-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .download-link {
+      display: block;
+      padding: 10px 16px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 8px;
+      color: #a5b4fc;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .download-link:hover {
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    /* FAQ */
+    .faq-list {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+    .faq-q {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .faq-a {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    footer a {
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+    }
+    footer a:hover {
+      color: #a5b4fc;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 16px; }
+      .features { grid-template-columns: 1fr; }
+      .download-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1>Web Chat Bridge</h1>
+      <p>Let AI chat assistants control your local files and execute commands directly from the browser.</p>
+      <a href="#download" class="hero-btn">Download</a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="container">
+      <h2>Features</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">📁</div>
+          <h3>File Operations</h3>
+          <p>Read, write, and edit files on your local machine directly from the chat.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Command Execution</h3>
+          <p>Run shell commands and manage background tasks like servers and dev tools.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔗</div>
+          <h3>Multi-Platform</h3>
+          <p>Works with DeepSeek, Kimi, and Doubao — the AI platforms you already use.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🤖</div>
+          <h3>Auto Detection</h3>
+          <p>Automatically detects AI responses and executes tool calls in the background.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -->
+  <section>
+    <div class="container screenshots">
+      <h2>How It Works</h2>
+      <div class="screenshots-placeholder">
+        Screenshots coming soon
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation -->
+  <section>
+    <div class="container">
+      <h2>Quick Start</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Install the Extension</h4>
+            <p>Download and install the Chrome extension (.crx file).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Install Native Host</h4>
+            <p>Download and run the installer for your platform.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Start Chatting</h4>
+            <p>Open DeepSeek, Kimi, or Doubao and start using AI to control your files.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section id="download">
+    <div class="container">
+      <h2>Download</h2>
+      <div class="download-grid">
+        <div class="download-card">
+          <h3>🪟 Windows</h3>
+          <div class="download-links">
+            <a href="#" class="download-link">Chrome Extension (.crx)</a>
+            <a href="#" class="download-link">Native Host (.exe)</a>
+          </div>
+        </div>
+        <div class="download-card">
+          <h3>🍎 macOS</h3>
+          <div class="download-links">
+            <a href="#" class="download-link">Chrome Extension (.crx)</a>
+            <a href="#" class="download-link">Native Host (Intel)</a>
+            <a href="#" class="download-link">Native Host (Apple Silicon)</a>
+          </div>
+        </div>
+        <div class="download-card">
+          <h3>🐧 Linux</h3>
+          <div class="download-links">
+            <a href="#" class="download-link">Chrome Extension (.crx)</a>
+            <a href="#" class="download-link">Native Host (x64)</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="container">
+      <h2>FAQ</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">What browsers are supported?</div>
+          <div class="faq-a">Any Chromium-based browser: Chrome, Edge, Brave, etc.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Is it safe?</div>
+          <div class="faq-a">The extension only runs when you activate it. It reads AI responses from the page and sends commands to a local process on your machine. No data is sent to external servers.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Which AI platforms are supported?</div>
+          <div class="faq-a">DeepSeek, Kimi, and Doubao. More platforms may be added in the future.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">How does it work?</div>
+          <div class="faq-a">The Chrome extension detects tool call blocks in AI responses, sends them to a local native host process, which executes the commands and returns results back to the chat.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>Web Chat Bridge &copy; 2025 &middot; <a href="https://github.com/wsyb/web-chat-bridge">GitHub</a></p>
+    </div>
+  </footer>
+
+</body>
+</html>

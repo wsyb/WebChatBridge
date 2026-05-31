@@ -1,376 +1,663 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Chat Bridge</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0a1a;
-      color: rgba(255, 255, 255, 0.9);
-      line-height: 1.6;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebChatBridge - 让 AI 直接操作你的电脑</title>
+    <meta name="description" content="Chrome 扩展 + Rust 本地服务，让网页版 AI 聊天助手直接读写文件、执行命令、管理后台任务">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface-2: #1a1a1a;
+            --border: #262626;
+            --text: #e5e5e5;
+            --text-muted: #a3a3a3;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --radius: 12px;
+        }
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 80px 0 60px;
-    }
-    .hero h1 {
-      font-size: 48px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, #6366f1, #a5b4fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero p {
-      font-size: 18px;
-      color: rgba(255, 255, 255, 0.6);
-      max-width: 600px;
-      margin: 0 auto 32px;
-    }
-    .hero-btn {
-      display: inline-block;
-      padding: 14px 32px;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      border-radius: 10px;
-      color: #a5b4fc;
-      font-size: 16px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .hero-btn:hover {
-      background: rgba(99, 102, 241, 0.3);
-      transform: translateY(-2px);
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    /* Section */
-    section {
-      padding: 60px 0;
-    }
-    section h2 {
-      font-size: 28px;
-      font-weight: 600;
-      margin-bottom: 32px;
-      text-align: center;
-    }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
 
-    /* Features */
-    .features {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    .feature {
-      padding: 24px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-    }
-    .feature-icon {
-      font-size: 32px;
-      margin-bottom: 12px;
-    }
-    .feature h3 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .feature p {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.5);
-    }
+        /* Nav */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
 
-    /* Screenshots */
-    .screenshots {
-      text-align: center;
-    }
-    .screenshots-placeholder {
-      width: 100%;
-      height: 300px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255, 255, 255, 0.3);
-      font-size: 14px;
-    }
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
 
-    /* Installation */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    .step {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-    }
-    .step-num {
-      width: 32px;
-      height: 32px;
-      background: rgba(99, 102, 241, 0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
-      color: #a5b4fc;
-      flex-shrink: 0;
-    }
-    .step-content h4 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .step-content p {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.5);
-    }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+            text-decoration: none;
+            color: var(--text);
+        }
 
-    /* Download */
-    .download-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
-    }
-    .download-card {
-      padding: 24px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      text-align: center;
-    }
-    .download-card h3 {
-      font-size: 18px;
-      margin-bottom: 16px;
-    }
-    .download-links {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .download-link {
-      display: block;
-      padding: 10px 16px;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 8px;
-      color: #a5b4fc;
-      text-decoration: none;
-      font-size: 13px;
-      transition: all 0.2s;
-    }
-    .download-link:hover {
-      background: rgba(99, 102, 241, 0.25);
-    }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
 
-    /* FAQ */
-    .faq-list {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .faq-item {
-      padding: 20px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .faq-item:last-child {
-      border-bottom: none;
-    }
-    .faq-q {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .faq-a {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.5);
-    }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
 
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 40px 0;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.3);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    footer a {
-      color: rgba(255, 255, 255, 0.5);
-      text-decoration: none;
-    }
-    footer a:hover {
-      color: #a5b4fc;
-    }
+        nav a:hover {
+            color: var(--text);
+        }
 
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 16px; }
-      .features { grid-template-columns: 1fr; }
-      .download-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .btn-github {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-github:hover {
+            background: var(--border);
+            border-color: #404040;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 140px 0 80px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+        }
+
+        .hero h1 {
+            font-size: clamp(40px, 6vw, 64px);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 12px 28px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            padding: 12px 28px;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-2);
+            border-color: #404040;
+        }
+
+        /* Architecture */
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .section-desc {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 40px 0;
+        }
+
+        .arch-node {
+            padding: 20px 28px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+            min-width: 140px;
+        }
+
+        .arch-node .icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .arch-node .label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .arch-node .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .arch-arrow {
+            font-size: 24px;
+            color: var(--text-muted);
+        }
+
+        /* Features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-card {
+            padding: 28px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: #404040;
+        }
+
+        .feature-card .icon {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Platforms */
+        .platforms {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .platform-card {
+            padding: 24px 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+            min-width: 160px;
+        }
+
+        .platform-card .icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .platform-card .name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .platform-card .status {
+            font-size: 13px;
+            color: var(--green);
+        }
+
+        /* Code block */
+        .code-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .code-dot.red { background: #ef4444; }
+        .code-dot.yellow { background: #eab308; }
+        .code-dot.green { background: #22c55e; }
+
+        .code-body {
+            padding: 20px 24px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+
+        .code-body .comment { color: #6b7280; }
+        .code-body .keyword { color: #c084fc; }
+        .code-body .string { color: #34d399; }
+        .code-body .tool { color: #60a5fa; }
+
+        /* Install steps */
+        .steps {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .step-content code {
+            background: var(--surface-2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .arch-flow {
+                flex-direction: column;
+            }
+            .arch-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Hero -->
-  <section class="hero">
+<nav>
     <div class="container">
-      <h1>Web Chat Bridge</h1>
-      <p>Let AI chat assistants control your local files and execute commands directly from the browser.</p>
-      <a href="#download" class="hero-btn">Download</a>
+        <a href="#" class="logo">
+            <div class="logo-icon">⚡</div>
+            WebChatBridge
+        </a>
+        <div class="nav-links">
+            <a href="#features">功能</a>
+            <a href="#how-it-works">原理</a>
+            <a href="#install">安装</a>
+            <a href="https://github.com/wsyb/WebChatBridge" class="btn-github">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub
+            </a>
+        </div>
     </div>
-  </section>
+</nav>
 
-  <!-- Features -->
-  <section>
+<section class="hero">
     <div class="container">
-      <h2>Features</h2>
-      <div class="features">
-        <div class="feature">
-          <div class="feature-icon">📁</div>
-          <h3>File Operations</h3>
-          <p>Read, write, and edit files on your local machine directly from the chat.</p>
+        <div class="hero-badge">
+            <span class="dot"></span>
+            支持 DeepSeek · Kimi · 豆包
         </div>
-        <div class="feature">
-          <div class="feature-icon">⚡</div>
-          <h3>Command Execution</h3>
-          <p>Run shell commands and manage background tasks like servers and dev tools.</p>
+        <h1>让 AI <span>直接操作</span>你的电脑</h1>
+        <p>Chrome 扩展 + Rust 本地服务，让网页版 AI 聊天助手直接读写文件、执行命令、管理后台任务。全自动，无需手动操作。</p>
+        <div class="hero-buttons">
+            <a href="https://github.com/wsyb/WebChatBridge/releases" class="btn-primary">下载安装</a>
+            <a href="https://github.com/wsyb/WebChatBridge" class="btn-secondary">查看源码</a>
         </div>
-        <div class="feature">
-          <div class="feature-icon">🔗</div>
-          <h3>Multi-Platform</h3>
-          <p>Works with DeepSeek, Kimi, and Doubao — the AI platforms you already use.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🤖</div>
-          <h3>Auto Detection</h3>
-          <p>Automatically detects AI responses and executes tool calls in the background.</p>
-        </div>
-      </div>
     </div>
-  </section>
+</section>
 
-  <!-- Screenshots -->
-  <section>
-    <div class="container screenshots">
-      <h2>How It Works</h2>
-      <div class="screenshots-placeholder">
-        Screenshots coming soon
-      </div>
-    </div>
-  </section>
-
-  <!-- Installation -->
-  <section>
+<section class="section" id="features">
     <div class="container">
-      <h2>Quick Start</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-content">
-            <h4>Install the Extension</h4>
-            <p>Download and install the Chrome extension (.crx file).</p>
-          </div>
+        <h2 class="section-title">核心能力</h2>
+        <p class="section-desc">AI 输出指令，插件自动执行，结果自动回传。真正的全自动闭环。</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">📁</div>
+                <h3>文件操作</h3>
+                <p>读取、写入、编辑、搜索文件。AI 可以直接在你的项目中创建代码、修改配置、查找内容。</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">💻</div>
+                <h3>命令执行</h3>
+                <p>执行任意 shell 命令。安装依赖、运行测试、启动服务，AI 全自动完成。</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔄</div>
+                <h3>后台任务</h3>
+                <p>启动长时间运行的进程（开发服务器、watch 模式），查看日志，随时终止。</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🤖</div>
+                <h3>全自动循环</h3>
+                <p>AI 输出指令 → 插件执行 → 结果返回 → AI 继续。无需人工干预，直到任务完成。</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔒</div>
+                <h3>安全优先</h3>
+                <p>危险操作需用户确认。本地执行，数据不离开你的电脑。开源透明。</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔌</div>
+                <h3>多平台适配</h3>
+                <p>支持 DeepSeek、Kimi、豆包。每个平台独立适配，互不影响。</p>
+            </div>
         </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-content">
-            <h4>Install Native Host</h4>
-            <p>Download and run the installer for your platform.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-content">
-            <h4>Start Chatting</h4>
-            <p>Open DeepSeek, Kimi, or Doubao and start using AI to control your files.</p>
-          </div>
-        </div>
-      </div>
     </div>
-  </section>
+</section>
 
-  <!-- Download -->
-  <section id="download">
+<section class="section" id="how-it-works">
     <div class="container">
-      <h2>Download</h2>
-      <div class="download-grid">
-        <div class="download-card">
-          <h3>🪟 Windows</h3>
-          <div class="download-links">
-            <a href="#" class="download-link">Chrome Extension (.crx)</a>
-            <a href="#" class="download-link">Native Host (.exe)</a>
-          </div>
+        <h2 class="section-title">工作原理</h2>
+        <p class="section-desc">四个角色协作，形成闭环</p>
+        <div class="arch-flow">
+            <div class="arch-node">
+                <div class="icon">👤</div>
+                <div class="label">用户</div>
+                <div class="sub">输入需求</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <div class="icon">🧠</div>
+                <div class="label">AI</div>
+                <div class="sub">推理 + 生成指令</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <div class="icon">🔌</div>
+                <div class="label">Chrome 扩展</div>
+                <div class="sub">检测 + 解析 + 通信</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+                <div class="icon">⚙️</div>
+                <div class="label">Native Host</div>
+                <div class="sub">本地执行</div>
+            </div>
         </div>
-        <div class="download-card">
-          <h3>🍎 macOS</h3>
-          <div class="download-links">
-            <a href="#" class="download-link">Chrome Extension (.crx)</a>
-            <a href="#" class="download-link">Native Host (Intel)</a>
-            <a href="#" class="download-link">Native Host (Apple Silicon)</a>
-          </div>
-        </div>
-        <div class="download-card">
-          <h3>🐧 Linux</h3>
-          <div class="download-links">
-            <a href="#" class="download-link">Chrome Extension (.crx)</a>
-            <a href="#" class="download-link">Native Host (x64)</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- FAQ -->
-  <section>
-    <div class="container">
-      <h2>FAQ</h2>
-      <div class="faq-list">
-        <div class="faq-item">
-          <div class="faq-q">What browsers are supported?</div>
-          <div class="faq-a">Any Chromium-based browser: Chrome, Edge, Brave, etc.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-q">Is it safe?</div>
-          <div class="faq-a">The extension only runs when you activate it. It reads AI responses from the page and sends commands to a local process on your machine. No data is sent to external servers.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-q">Which AI platforms are supported?</div>
-          <div class="faq-a">DeepSeek, Kimi, and Doubao. More platforms may be added in the future.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-q">How does it work?</div>
-          <div class="faq-a">The Chrome extension detects tool call blocks in AI responses, sends them to a local native host process, which executes the commands and returns results back to the chat.</div>
-        </div>
-      </div>
-    </div>
-  </section>
+        <div class="code-section" style="margin-top: 48px;">
+            <div class="code-header">
+                <div class="code-dot red"></div>
+                <div class="code-dot yellow"></div>
+                <div class="code-dot green"></div>
+            </div>
+            <div class="code-body">
+<span class="comment">// AI 输出的工具调用</span>
+<span class="keyword">```tool_call</span>
+===
+<span class="tool">write</span>
+---
+file_path: &lt;&lt;&lt;
+{{workDir}}/app.py
+&gt;&gt;&gt;
+content: &lt;&lt;&lt;
+<span class="string">from flask import Flask
+app = Flask(__name__)
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>Web Chat Bridge &copy; 2025 &middot; <a href="https://github.com/wsyb/web-chat-bridge">GitHub</a></p>
+@app.route('/')
+def hello():
+    return 'Hello World!'</span>
+&gt;&gt;&gt;
+===
+<span class="keyword">```</span>
+
+<span class="comment">// 插件自动检测 → 执行 → 结果返回给 AI</span>
+            </div>
+        </div>
     </div>
-  </footer>
+</section>
+
+<section class="section" id="platforms">
+    <div class="container">
+        <h2 class="section-title">支持的平台</h2>
+        <p class="section-desc">适配主流 AI 聊天平台，开箱即用</p>
+        <div class="platforms">
+            <div class="platform-card">
+                <div class="icon">🐋</div>
+                <div class="name">DeepSeek</div>
+                <div class="status">✓ 完整支持</div>
+            </div>
+            <div class="platform-card">
+                <div class="icon">🌙</div>
+                <div class="name">Kimi</div>
+                <div class="status">✓ 完整支持</div>
+            </div>
+            <div class="platform-card">
+                <div class="icon">🫘</div>
+                <div class="name">豆包</div>
+                <div class="status">✓ 完整支持</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="install">
+    <div class="container">
+        <h2 class="section-title">快速开始</h2>
+        <p class="section-desc">三步完成安装</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <h4>下载并编译 Native Host</h4>
+                    <p>克隆仓库，运行安装脚本：<code>cd native-host && bash install.sh</code></p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <h4>安装 Chrome 扩展</h4>
+                    <p>打开 <code>chrome://extensions/</code>，启用开发者模式，加载已解压的扩展程序</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <h4>开始使用</h4>
+                    <p>打开 AI 聊天页面，点击工具栏的「注入提示词」，然后告诉 AI 你想做什么</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="text-align: center;">
+        <h2 class="section-title">开源免费</h2>
+        <p class="section-desc">MIT 协议，欢迎贡献</p>
+        <div class="hero-buttons">
+            <a href="https://github.com/wsyb/WebChatBridge" class="btn-primary">⭐ GitHub</a>
+            <a href="https://github.com/wsyb/WebChatBridge/issues" class="btn-secondary">反馈问题</a>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>WebChatBridge · <a href="https://github.com/wsyb/WebChatBridge">GitHub</a> · MIT License</p>
+    </div>
+</footer>
 
 </body>
 </html>

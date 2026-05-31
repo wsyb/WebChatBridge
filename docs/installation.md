@@ -3,10 +3,72 @@
 ## 前置要求
 
 - Chrome 浏览器（或基于 Chromium 的浏览器）
-- Rust 工具链（用于编译 Native Host）
-- Node.js（用于构建扩展）
+- Rust 工具链（用于编译 Native Host，可选）
+- Node.js（用于构建扩展，可选）
 
-## 1. 编译 Chrome 扩展
+## 方式一：下载预编译版本（推荐）
+
+### 1. 下载
+
+前往 [GitHub Releases](https://github.com/wsyb/WebChatBridge/releases) 下载：
+
+- **Native Host**：选择对应你操作系统的 `wcb` 二进制文件
+- **Chrome 扩展**：下载 `webchatbridge-extension.zip`
+
+### 2. 安装 Native Host
+
+将 `wcb` 复制到你的 PATH 目录：
+
+**Linux / macOS：**
+
+```bash
+# 创建目录（如果不存在）
+mkdir -p ~/.local/bin
+
+# 复制并赋予执行权限
+cp wcb ~/.local/bin/wcb
+chmod +x ~/.local/bin/wcb
+```
+
+**Windows (PowerShell)：**
+
+```powershell
+# 复制到 PATH 目录
+Copy-Item wcb.exe $env:LOCALAPPDATA\Microsoft\WindowsApps\
+```
+
+### 3. 加载 Chrome 扩展
+
+1. 解压 `webchatbridge-extension.zip`
+2. 打开 Chrome，访问 `chrome://extensions/`
+3. 启用「开发者模式」
+4. 点击「加载已解压的扩展程序」
+5. 选择解压后的扩展目录
+
+### 4. 启动并使用
+
+```bash
+# 启动 Native Host 服务器
+wcb
+```
+
+然后：
+
+1. 打开 DeepSeek / Kimi / 豆包的网页
+2. 页面顶部出现浮动工具栏
+3. 点击「注入提示词」
+4. 在对话框输入你的需求，AI 会自动执行
+
+## 方式二：从源码编译
+
+### 1. 克隆仓库
+
+```bash
+git clone https://github.com/wsyb/WebChatBridge.git
+cd WebChatBridge
+```
+
+### 2. 构建 Chrome 扩展
 
 ```bash
 cd extension
@@ -14,75 +76,52 @@ npm install
 npm run build
 ```
 
-构建产物在 `dist/` 目录。
-
-## 2. 加载 Chrome 扩展
-
-1. 打开 Chrome，地址栏输入 `chrome://extensions/`
-2. 右上角启用"开发者模式"
-3. 点击"加载已解压的扩展程序"
-4. 选择 `extension` 目录
-5. 页面上会显示扩展 ID（32 位字母字符串），**复制保存**
-
-## 3. 编译 Native Host
+### 3. 编译 Native Host
 
 ```bash
 cd native-host
 cargo build --release
 ```
 
-编译产物在 `target/release/WebChatBridge-native-host`。
+### 4. 安装 Native Host
 
-## 4. 安装 Native Host
+将编译产物复制到 PATH 目录：
 
-### Linux / macOS
-
-```bash
-cd native-host
-chmod +x install.sh
-./install.sh
-# 按提示粘贴扩展 ID
-```
-
-### Windows (Git Bash / WSL)
+**Linux / macOS：**
 
 ```bash
-cd native-host
-./install.sh
-# 按提示粘贴扩展 ID
+cp target/release/wcb ~/.local/bin/wcb
+chmod +x ~/.local/bin/wcb
 ```
 
-### Windows (CMD / PowerShell)
+**Windows (PowerShell)：**
 
-```cmd
-cd native-host
-install.bat
-# 按提示粘贴扩展 ID
+```powershell
+Copy-Item target\release\wcb.exe $env:LOCALAPPDATA\Microsoft\WindowsApps\
 ```
 
-安装脚本会自动：
-- 检测操作系统和浏览器
-- 生成 manifest 文件
-- 注册 Native Messaging Host
+### 5. 加载 Chrome 扩展
 
-## 5. 启动 Native Host 服务
+1. 打开 Chrome，访问 `chrome://extensions/`
+2. 启用「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择 `extension` 目录
 
-Native Host 以 HTTP 服务器模式运行，监听 `localhost:18789`：
+### 6. 启动并使用
 
 ```bash
-cd native-host
-./target/release/WebChatBridge-native-host
+wcb
 ```
 
-## 6. 验证安装
+## 验证安装
 
 1. 打开 DeepSeek / Kimi / 豆包网页
 2. 页面顶部出现浮动工具栏
-3. 工具栏显示"已连接"
-4. 点击"注入提示词"
+3. 工具栏显示「已连接」
+4. 点击「注入提示词」
 5. 在对话框输入需求，AI 会自动执行
 
-## 常见安装问题
+## 常见问题
 
 ### 扩展加载后看不到工具栏
 
@@ -90,11 +129,10 @@ cd native-host
 - 检查当前页面是否是支持的平台
 - 刷新页面重试
 
-### 工具栏显示"未连接"
+### 工具栏显示「未连接」
 
-- Native Host 服务是否在运行
+- Native Host 服务是否在运行（执行 `wcb` 启动）
 - 端口 18789 是否被占用
-- 检查 Native Host 日志
 
 ### 注入提示词失败
 

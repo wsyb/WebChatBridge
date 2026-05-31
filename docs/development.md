@@ -1,53 +1,148 @@
 # 开发指南
 
+## 环境要求
+
+| 工具 | 版本 | 说明 |
+|------|------|------|
+| Node.js | >= 18 | 扩展构建 |
+| npm | >= 9 | 依赖管理 |
+| Rust | >= 1.75 | Native Host 编译 |
+| Chrome | >= 110 | 测试扩展 |
+
+## 快速开始
+
+### 1. 克隆仓库
+
+```bash
+git clone https://github.com/wsyb/WebChatBridge.git
+cd WebChatBridge
+```
+
+### 2. 构建 Chrome 扩展
+
+```bash
+cd extension
+npm install
+npm run build
+```
+
+构建产物在 `extension/dist/`。
+
+### 3. 编译 Native Host
+
+```bash
+cd native-host
+cargo build --release
+```
+
+编译产物在 `native-host/target/release/wcb`。
+
+### 4. 加载扩展测试
+
+1. 打开 Chrome，访问 `chrome://extensions/`
+2. 启用「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择 `extension` 目录
+5. 打开 DeepSeek / Kimi / 豆包网页，检查工具栏是否显示
+
+## 开发命令
+
+### Chrome 扩展
+
+```bash
+cd extension
+
+npm install          # 安装依赖
+npm run build        # 构建
+npm run dev          # 开发模式（文件变更自动重新构建）
+npm run lint         # 代码检查
+npm run format       # 代码格式化
+npm run typecheck    # 类型检查
+npm run test         # 运行测试
+```
+
+### Native Host
+
+```bash
+cd native-host
+
+cargo build          # 调试构建
+cargo build --release  # 发布构建
+cargo test           # 运行测试
+cargo clippy         # 代码检查
+cargo fmt            # 代码格式化
+```
+
+## 代码规范
+
+### TypeScript
+
+- 使用 ESLint + Prettier
+- 运行 `npm run lint` 检查
+- 运行 `npm run format` 格式化
+
+### Rust
+
+- 遵循 rustfmt 默认格式
+- 使用 `cargo clippy` 检查
+- 运行 `cargo fmt` 格式化
+
+### 提交信息
+
+遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+类型：
+- `feat`: 新功能
+- `fix`: 修复 bug
+- `docs`: 文档更新
+- `style`: 代码格式（不影响功能）
+- `refactor`: 重构
+- `test`: 测试相关
+- `chore`: 构建/工具相关
+
+示例：
+```
+feat(doubao): 添加豆包平台适配器
+fix(agent-loop): 修复 tool_call 检测失败的问题
+docs: 更新安装指南
+```
+
 ## 项目结构
 
 ```
 WebChatBridge/
-├── extension/           # Chrome 扩展
+├── extension/                   # Chrome 扩展
 │   ├── src/
-│   │   ├── adapters/              # 平台适配器
-│   │   │   ├── impl/
-│   │   │   │   ├── deepseek.ts    # DeepSeek 适配器
-│   │   │   │   ├── kimi.ts        # Kimi 适配器
-│   │   │   │   └── doubao.ts      # 豆包适配器
-│   │   │   ├── base.ts            # 适配器基类
-│   │   │   ├── types.ts           # 适配器接口定义
-│   │   │   └── manager.ts         # 适配器管理器
-│   │   ├── agent/
-│   │   │   ├── loop.ts            # Agent Loop 核心循环
-│   │   │   └── storage.ts         # 状态持久化
-│   │   ├── detector/
-│   │   │   ├── parser.ts          # tool_call 解析器
-│   │   │   └── text-parser.ts     # 文本协议解析器
-│   │   ├── prompts/
-│   │   │   ├── index.ts           # 提示词管理
-│   │   │   └── templates.ts       # 提示词模板
-│   │   ├── core/
-│   │   │   ├── config.ts          # 配置管理
-│   │   │   ├── http-client.ts     # HTTP 通信
-│   │   │   ├── logger.ts          # 日志系统
-│   │   │   ├── state.ts           # 状态管理
-│   │   │   └── types.ts           # 类型定义
-│   │   ├── content/
-│   │   │   ├── index.ts           # Content Script 入口
-│   │   │   └── toolbar.ts         # 浮动工具栏
-│   │   └── tools/
-│   │       ├── impl/              # 工具实现
-│   │       └── registry.ts        # 工具注册表
-│   └── dist/                      # 构建产物
-├── native-host/                   # Rust Native Host
+│   │   ├── adapters/            # 平台适配器
+│   │   │   ├── impl/            # 具体适配器实现
+│   │   │   ├── base.ts          # 适配器基类
+│   │   │   ├── types.ts         # 接口定义
+│   │   │   └── manager.ts       # 适配器管理器
+│   │   ├── agent/               # Agent Loop 核心循环
+│   │   ├── detector/            # tool_call 检测和解析
+│   │   ├── prompts/             # 提示词模板
+│   │   ├── core/                # 基础设施（配置、日志、状态）
+│   │   ├── content/             # Content Script（工具栏）
+│   │   └── tools/               # 工具注册表
+│   ├── dist/                    # 构建产物（git ignore）
+│   └── tests/                   # 测试文件
+├── native-host/                 # Rust Native Host
 │   ├── src/
-│   │   ├── main.rs                # 入口
-│   │   └── tool/
-│   │       ├── task_manager.rs    # 后台任务管理
-│   │       ├── read.rs            # 读取文件
-│   │       ├── write.rs           # 写入文件
-│   │       ├── shell.rs           # 执行命令
-│   │       └── ...
+│   │   ├── main.rs              # 入口
+│   │   ├── server.rs            # HTTP 服务器
+│   │   ├── log.rs               # 日志系统
+│   │   └── tool/                # 工具实现
 │   └── Cargo.toml
-├── docs/                          # 文档
-└── README.md
+├── docs/                        # 文档
+└── .github/                     # GitHub 配置
 ```
 
 ## 添加新平台适配器
@@ -139,7 +234,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
 1. 构建扩展：`npm run build`
 2. 重新加载扩展
 3. 打开目标平台网页
-4. 检查工具栏是否显示"已连接"
+4. 检查工具栏是否显示「已连接」
 5. 注入提示词，测试 tool_call 检测和执行
 
 ## Agent Loop 执行链路

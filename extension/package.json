@@ -1,7 +1,7 @@
 {
   "name": "webchatbridge",
   "version": "1.0.0",
-  "description": "Enable web AI services to access local filesystem and execute commands",
+  "description": "Enable web AI chat services to access local/remote filesystem and execute commands",
   "type": "module",
   "scripts": {
     "build": "tsx build.ts",

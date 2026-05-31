@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web Chat Bridge",
   "version": "0.2.0",
-  "description": "Enable web AI chat services to access local filesystem and execute commands",
+  "description": "Enable web AI chat services to access local/remote filesystem and execute commands",
   "permissions": [
     "activeTab",
     "scripting",

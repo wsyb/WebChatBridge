@@ -832,18 +832,19 @@ export class Toolbar {
       /* 任务面板按钮 */
       .task-panel-btn {
         position: relative;
-        width: 28px;
         height: 28px;
+        padding: 0 10px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         background: rgba(255, 255, 255, 0.08);
         border-radius: 6px;
         color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
+        font-size: 12px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
+        white-space: nowrap;
       }
       .task-panel-btn:hover { background: rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.9); }
       .task-badge {

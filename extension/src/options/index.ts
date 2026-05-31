@@ -145,6 +145,52 @@ function resetCurrentPrompt(): void {
 // UI
 // ============================================================
 
+// ============================================================
+// 测试连接
+// ============================================================
+
+async function testConnection(): Promise<void> {
+  const hostInput = document.getElementById('native-host') as HTMLInputElement;
+  const portInput = document.getElementById('native-port') as HTMLInputElement;
+  const resultEl = document.getElementById('test-result');
+
+  const host = hostInput?.value.trim() || '127.0.0.1';
+  const port = parseInt(portInput?.value || '18789', 10);
+
+  if (resultEl) {
+    resultEl.textContent = '测试中...';
+    resultEl.className = 'test-result';
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`http://${host}:${port}/health`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (response.ok) {
+      if (resultEl) {
+        resultEl.textContent = '✓ 连接成功';
+        resultEl.className = 'test-result success';
+      }
+    } else {
+      if (resultEl) {
+        resultEl.textContent = '✗ 服务响应异常';
+        resultEl.className = 'test-result error';
+      }
+    }
+  } catch (e) {
+    if (resultEl) {
+      const msg = e instanceof Error && e.name === 'AbortError' ? '连接超时' : '无法连接';
+      resultEl.textContent = `✗ ${msg}`;
+      resultEl.className = 'test-result error';
+    }
+  }
+}
+
 function showStatus(msg: string, success: boolean): void {
   const el = document.getElementById('status-msg');
   if (!el) return;
@@ -158,6 +204,10 @@ function bindEvents(): void {
     saveConnectionSettings();
     saveCurrentPrompt();
     showStatus('已保存', true);
+  });
+
+  document.getElementById('test-conn-btn')?.addEventListener('click', () => {
+    testConnection();
   });
 
   document.getElementById('reset-btn')?.addEventListener('click', () => {

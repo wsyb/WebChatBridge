@@ -473,7 +473,12 @@ export class Toolbar {
     this.logMinimized = !this.logMinimized;
     const body = this.logWindowEl?.querySelector('#log-body') as HTMLElement;
     const btn = this.logWindowEl?.querySelector('#log-minimize') as HTMLElement;
-    if (body) body.style.display = this.logMinimized ? 'none' : 'block';
+    if (body) {
+      body.style.display = this.logMinimized ? 'none' : 'flex';
+    }
+    if (this.logWindowEl) {
+      this.logWindowEl.style.height = this.logMinimized ? 'auto' : '320px';
+    }
     if (btn) btn.textContent = this.logMinimized ? '□' : '—';
   }
 
@@ -947,6 +952,9 @@ export class Toolbar {
         border-radius: 10px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         z-index: 2147483646;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         backdrop-filter: blur(12px);

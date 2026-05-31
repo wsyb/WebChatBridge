@@ -96,8 +96,15 @@ function renderPlatformTabs(): void {
 }
 
 function loadCustomPrompts(): void {
-  chrome.storage.local.get(['wcb_custom_prompts'], (result) => {
-    customPrompts = result['wcb_custom_prompts'] || {};
+  // Load from individual keys (same as prompts/index.ts)
+  const template = PROMPT_TEMPLATES[currentPlatformIndex];
+  if (!template) return;
+  
+  const storageKey = `customPrompt_${template.name}`;
+  chrome.storage.local.get([storageKey], (result) => {
+    if (result[storageKey]) {
+      customPrompts[template.name] = result[storageKey];
+    }
     loadPromptForCurrentPlatform();
   });
 }
@@ -124,8 +131,9 @@ function saveCurrentPrompt(): void {
   const editor = document.getElementById('prompt-editor') as HTMLTextAreaElement;
   if (!editor) return;
 
-  customPrompts[template.name] = editor.value;
-  chrome.storage.local.set({ wcb_custom_prompts: customPrompts });
+  // Use same storage key as prompts/index.ts
+  const storageKey = `customPrompt_${template.name}`;
+  chrome.storage.local.set({ [storageKey]: editor.value });
 }
 
 function resetCurrentPrompt(): void {
@@ -137,8 +145,10 @@ function resetCurrentPrompt(): void {
     editor.value = template.defaultPrompt;
   }
 
+  // Remove custom prompt from storage
+  const storageKey = `customPrompt_${template.name}`;
+  chrome.storage.local.remove(storageKey);
   delete customPrompts[template.name];
-  chrome.storage.local.set({ wcb_custom_prompts: customPrompts });
 }
 
 // ============================================================

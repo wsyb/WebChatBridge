@@ -120,15 +120,21 @@
     <!-- 连接设置 -->
     <div class="section">
       <div class="section-title">连接设置</div>
+      <div class="form-hint" style="margin-bottom: 16px; line-height: 1.6;">
+        此处配置插件连接的 wcb 服务地址。wcb 是运行在你电脑（或远程服务器）上的后台程序，负责执行 AI 发出的命令。<br>
+        本地使用：保持默认 127.0.0.1:18789 即可。<br>
+        远程使用：填写远程机器的 IP 和端口（远程机器需运行 <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:3px;">wcb --host 0.0.0.0 --port 18789</code>）。
+      </div>
       <div class="form-row">
-        <label>Native Host 地址</label>
+        <label>服务地址（IP 或域名）</label>
         <input type="text" id="native-host" value="127.0.0.1" placeholder="127.0.0.1">
       </div>
       <div class="form-row">
         <label>端口</label>
         <input type="number" id="native-port" value="18789" placeholder="18789" min="1" max="65535">
-        <div class="form-hint">本地使用默认即可，远程需配置 IP 和端口</div>
-        <button class="btn btn-test" id="test-conn-btn" style="margin-top: 8px;">🔗 测试连接</button>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-test" id="test-conn-btn">🔗 测试连接</button>
         <span class="test-result" id="test-result"></span>
       </div>
     </div>

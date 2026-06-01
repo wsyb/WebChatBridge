@@ -114,7 +114,6 @@ export class AgentLoop {
   pause(): void {
     this._isRunning = false;
     this.adapter.unlockInput();
-    this.interceptor.reset();
     if (this._resolveWaiting) {
       this._resolveWaiting();
       this._resolveWaiting = null;
@@ -123,7 +122,10 @@ export class AgentLoop {
   }
 
   resume(conversationId: string): void {
-    // conversationId: ${conversationId}
+    if (this._isRunning) {
+      this.logger.debug('AgentLoop already running, skip resume');
+      return;
+    }
     this._isRunning = true;
     this.logger.info(`AgentLoop resumed for: ${conversationId}`);
     this._runLoop();

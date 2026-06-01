@@ -1,0 +1,43 @@
+{
+  "name": "webchatbridge",
+  "version": "1.0.0",
+  "description": "Enable web AI chat services (DeepSeek, Kimi, Doubao) to access local/remote filesystem and execute commands",
+  "type": "module",
+  "scripts": {
+    "build": "tsx build.ts",
+    "dev": "tsx watch build.ts",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@types/chrome": "^0.0.287",
+    "@types/jsdom": "^28.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "puppeteer": "^25.1.0"
+  },
+  "author": "Felix Yin <ybkk1027@163.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wsyb/WebChatBridge.git"
+  },
+  "homepage": "https://github.com/wsyb/WebChatBridge",
+  "bugs": {
+    "url": "https://github.com/wsyb/WebChatBridge/issues"
+  }
+}

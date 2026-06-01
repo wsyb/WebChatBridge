@@ -1,0 +1,30 @@
+[package]
+name = "wcb"
+version = "0.1.0"
+edition = "2021"
+description = "Native Messaging host for Web Chat Bridge Chrome extension"
+authors = ["Felix Yin <ybkk1027@163.com>"]
+license = "MIT"
+repository = "https://github.com/wsyb/WebChatBridge"
+homepage = "https://github.com/wsyb/WebChatBridge"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+async-trait = "0.1"
+glob = "0.3"
+ignore = "0.4"
+regex = "1"
+similar = "2"
+dirs = "5"
+libc = "0.2"
+uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true

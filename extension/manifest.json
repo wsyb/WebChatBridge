@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "Web Chat Bridge",
+  "version": "0.2.0",
+  "description": "Enable web AI chat services (DeepSeek, Kimi, Doubao) to access local/remote filesystem and execute commands",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "https://kimi.moonshot.cn/*",
+    "https://www.kimi.com/*",
+    "https://chat.deepseek.com/*",
+    "https://www.doubao.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "dist/background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://kimi.moonshot.cn/*",
+        "https://www.kimi.com/*",
+        "https://chat.deepseek.com/*",
+        "https://www.doubao.com/*"
+      ],
+      "js": [
+        "dist/content/index.js"
+      ],
+      "css": [
+        "styles/content.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://kimi.moonshot.cn/*",
+        "https://www.kimi.com/*",
+        "https://chat.deepseek.com/*",
+        "https://www.doubao.com/*"
+      ],
+      "js": [
+        "dist/interceptor/main-world.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

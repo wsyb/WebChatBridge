@@ -1,0 +1,31 @@
+# Rust
+native-host/target/
+
+# Node
+extension/node_modules/
+extension/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Build artifacts
+*.o
+*.d
+
+# Test artifacts
+test-*.png
+test-*.cjs
+extension/TEST-RESULTS.md
+
+# Agent configs
+AGENTS.md
+CLAUDE.md
+DEVELOPMENT.md

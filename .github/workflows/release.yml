@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-extension:
+    name: Build Chrome Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Build extension
+        working-directory: extension
+        run: npm run build
+
+      - name: Package extension
+        run: |
+          cd extension
+          zip -r ../webchatbridge-extension.zip manifest.json dist/ styles/ icons/ popup.html options.html
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: webchatbridge-extension.zip
+
+  build-native-host:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact: wcb-linux-x64
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact: wcb-macos-x64
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact: wcb-macos-arm64
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            artifact: wcb-windows-x64
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release
+        working-directory: native-host
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          cd native-host/target/${{ matrix.target }}/release
+          tar czf ../../../${{ matrix.artifact }}.tar.gz wcb
+          cd ../../..
+          mv ${{ matrix.artifact }}.tar.gz ${{ github.workspace }}/
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          cd native-host/target/${{ matrix.target }}/release
+          7z a ../../../${{ matrix.artifact }}.zip wcb.exe
+          cd ../../..
+          Move-Item ${{ matrix.artifact }}.zip ${{ github.workspace }}/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.${{ matrix.archive }}
+
+  release:
+    name: Create Release
+    needs: [build-extension, build-native-host]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: WebChatBridge ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            artifacts/extension/webchatbridge-extension.zip
+            artifacts/wcb-linux-x64/wcb-linux-x64.tar.gz
+            artifacts/wcb-macos-x64/wcb-macos-x64.tar.gz
+            artifacts/wcb-macos-arm64/wcb-macos-arm64.tar.gz
+            artifacts/wcb-windows-x64/wcb-windows-x64.zip

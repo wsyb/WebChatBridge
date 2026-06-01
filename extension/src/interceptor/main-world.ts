@@ -153,13 +153,7 @@
   }
 
   function processStreamData(data: string): void {
-    if (isFinished(data)) {
-      logToHost('info', 'FINISHED detected, posting generation_complete');
-      postEvent('generation_complete', { text: _accumulatedText });
-      _accumulatedText = '';
-      return;
-    }
-
+    // 先提取文本（防止 BATCH 事件中 FINISHED 和文本在同一包）
     try {
       const p = JSON.parse(data);
 
@@ -177,7 +171,22 @@
           postEvent('tool_call_detected', { text: _accumulatedText });
         }
       }
+
+      // BATCH 事件：递归处理子事件
+      if (p.o === 'BATCH' && Array.isArray(p.v)) {
+        for (const item of p.v) {
+          processStreamData(JSON.stringify(item));
+        }
+      }
     } catch { /* ignore non-JSON */ }
+
+    // 文本提取完毕后再检查 FINISHED
+    if (isFinished(data)) {
+      logToHost('info', 'FINISHED detected, posting generation_complete');
+      logToHost('debug', 'Accumulated text length: ' + _accumulatedText.length);
+      postEvent('generation_complete', { text: _accumulatedText });
+      _accumulatedText = '';
+    }
   }
 
   // ============================================================

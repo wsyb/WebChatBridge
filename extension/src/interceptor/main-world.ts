@@ -228,8 +228,21 @@
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+        }
+        if (done) {
+          // Process remaining buffer on stream end
+          if (buffer.trim()) {
+            const remaining = buffer.split('\n');
+            for (const line of remaining) {
+              if (line.startsWith('data: ')) {
+                processStreamData(line.slice(6));
+              }
+            }
+          }
+          break;
+        }
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {

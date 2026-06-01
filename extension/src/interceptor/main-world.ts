@@ -182,7 +182,15 @@
 
     // 文本提取完毕后再检查 FINISHED
     if (isFinished(data)) {
-      logToHost('info', 'FINISHED detected, posting generation_complete');
+      // DeepSeek 深度思考模式：第一次 FINISHED 是思考结束（无工具调用），
+      // 第二次 FINISHED 才是真正的响应。
+      // 如果累积文本不包含 === 标记，说明这不是真正的工具调用响应，跳过。
+      if (!_accumulatedText.includes('===')) {
+        logToHost('info', 'FINISHED detected but no tool_call marker (===), skipping - likely deep-think phase');
+        logToHost('debug', 'Accumulated text (no ===): ' + _accumulatedText.substring(0, 200));
+        return;
+      }
+      logToHost('info', 'FINISHED detected with tool_call marker, posting generation_complete');
       logToHost('debug', 'Accumulated text length: ' + _accumulatedText.length);
       postEvent('generation_complete', { text: _accumulatedText });
       _accumulatedText = '';

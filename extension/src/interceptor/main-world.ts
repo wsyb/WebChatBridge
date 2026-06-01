@@ -109,6 +109,8 @@
   // ============================================================
 
   let _accumulatedText = '';
+  let _finishedTimer: ReturnType<typeof setTimeout> | null = null;
+  const FINISH_DEBOUNCE_MS = 500;  // Wait 500ms for all FINISHED events to arrive
 
   // ============================================================
   // API 直发支持 — 保存真实请求的完整信息（URL + init 对象）
@@ -154,16 +156,22 @@
 
   // 从累积文本中提取完整的 tool_call 代码块
   function extractToolCall(text: string): string | null {
+    logToHost('debug', 'extractToolCall: checking text length=' + text.length);
+    logToHost('debug', 'extractToolCall: text preview=' + text.substring(0, 200));
+    
     // 匹配 ```tool_call ... === ... === ... ``` 格式的完整代码块
     const regex = /```tool_call\n([\s\S]*?)```/g;
     let match;
     while ((match = regex.exec(text)) !== null) {
       const block = match[1].trim();
+      logToHost('debug', 'extractToolCall: found block, starts with ===: ' + block.startsWith('===') + ', ends with ===: ' + block.endsWith('==='));
+      logToHost('debug', 'extractToolCall: block preview=' + block.substring(0, 100));
       // 检查是否有完整的 === 分隔（开始和结束都有 ===）
       if (block.startsWith('===') && block.endsWith('===')) {
         return '```tool_call\n' + block + '\n```';
       }
     }
+    logToHost('debug', 'extractToolCall: no match found');
     return null;
   }
 
@@ -193,21 +201,36 @@
       }
     } catch { /* ignore non-JSON */ }
 
-    // FINISHED = AI 这一轮输出结束，从累积文本中提取 tool_call
+    // FINISHED = AI 这一轮输出结束
+    // 使用防抖：等待所有 FINISHED 事件到达后再提取，避免多个 FINISHED 竞争
     if (isFinished(data)) {
       logToHost('info', 'FINISHED detected, accumulated text length: ' + _accumulatedText.length);
-      logToHost('debug', 'Accumulated text content: ' + _accumulatedText.substring(0, 500));
       
-      // 提取完整的 tool_call 代码块
-      const toolCallBlock = extractToolCall(_accumulatedText);
-      if (toolCallBlock) {
-        logToHost('info', 'Complete tool_call extracted, length: ' + toolCallBlock.length);
-        postEvent('generation_complete', { text: _accumulatedText, toolCall: toolCallBlock });
-      } else {
-        logToHost('info', 'No complete tool_call in this generation');
-        postEvent('generation_complete', { text: _accumulatedText });
+      // 取消之前的定时器（如果有）
+      if (_finishedTimer) {
+        clearTimeout(_finishedTimer);
       }
-      _accumulatedText = '';
+      
+      // 保存当前累积文本的快照
+      const snapshot = _accumulatedText;
+      
+      // 启动新的定时器
+      _finishedTimer = setTimeout(() => {
+        _finishedTimer = null;
+        logToHost('info', 'FINISHED debounce fired, snapshot length: ' + snapshot.length);
+        logToHost('debug', 'FINISHED snapshot content: ' + snapshot.substring(0, 500));
+        
+        // 从快照中提取完整的 tool_call 代码块
+        const toolCallBlock = extractToolCall(snapshot);
+        if (toolCallBlock) {
+          logToHost('info', 'Complete tool_call extracted, length: ' + toolCallBlock.length);
+          postEvent('generation_complete', { text: snapshot, toolCall: toolCallBlock });
+        } else {
+          logToHost('info', 'No complete tool_call in this generation');
+          postEvent('generation_complete', { text: snapshot });
+        }
+        _accumulatedText = '';
+      }, FINISH_DEBOUNCE_MS);
     }
   }
 

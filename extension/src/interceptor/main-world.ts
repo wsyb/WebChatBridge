@@ -152,13 +152,29 @@
     return false;
   }
 
+  // 从累积文本中提取完整的 tool_call 代码块
+  function extractToolCall(text: string): string | null {
+    // 匹配 ```tool_call ... === ... === ... ``` 格式的完整代码块
+    const regex = /```tool_call\n([\s\S]*?)```/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const block = match[1].trim();
+      // 检查是否有完整的 === 分隔（开始和结束都有 ===）
+      if (block.startsWith('===') && block.endsWith('===')) {
+        return '```tool_call\n' + block + '\n```';
+      }
+    }
+    return null;
+  }
+
   function processStreamData(data: string): void {
     // 先提取文本（防止 BATCH 事件中 FINISHED 和文本在同一包）
     try {
       const p = JSON.parse(data);
 
-      // 提取文本：DeepSeek 用 p.v，豆包用 p.text
-      const text = (typeof p.v === 'string' && p.v.length > 0) ? p.v
+      // 提取文本：只有当没有 p 字段时才是真正的文本事件
+      // p 字段表示状态/属性路径（如 {p: "status", v: "FINISHED"}），不是文本
+      const text = (!p.p && typeof p.v === 'string' && p.v.length > 0) ? p.v
                  : (typeof p.text === 'string' && p.text.length > 0) ? p.text
                  : null;
 
@@ -166,10 +182,7 @@
         _accumulatedText += text;
         postEvent('text_delta', { delta: text, accumulated: _accumulatedText });
 
-        if (_accumulatedText.includes('tool_call') &&
-            _accumulatedText.includes('===')) {
-          postEvent('tool_call_detected', { text: _accumulatedText });
-        }
+        // tool_call 检测在 FINISHED 时进行（见下方 isFinished 处理）
       }
 
       // BATCH 事件：递归处理子事件
@@ -180,19 +193,20 @@
       }
     } catch { /* ignore non-JSON */ }
 
-    // 文本提取完毕后再检查 FINISHED
+    // FINISHED = AI 这一轮输出结束，从累积文本中提取 tool_call
     if (isFinished(data)) {
-      // DeepSeek 深度思考模式：第一次 FINISHED 是思考结束（无工具调用），
-      // 第二次 FINISHED 才是真正的响应。
-      // 如果累积文本不包含 === 标记，说明这不是真正的工具调用响应，跳过。
-      if (!_accumulatedText.includes('===')) {
-        logToHost('info', 'FINISHED detected but no tool_call marker (===), skipping - likely deep-think phase');
-        logToHost('debug', 'Accumulated text (no ===): ' + _accumulatedText.substring(0, 200));
-        return;
+      logToHost('info', 'FINISHED detected, accumulated text length: ' + _accumulatedText.length);
+      logToHost('debug', 'Accumulated text content: ' + _accumulatedText.substring(0, 500));
+      
+      // 提取完整的 tool_call 代码块
+      const toolCallBlock = extractToolCall(_accumulatedText);
+      if (toolCallBlock) {
+        logToHost('info', 'Complete tool_call extracted, length: ' + toolCallBlock.length);
+        postEvent('generation_complete', { text: _accumulatedText, toolCall: toolCallBlock });
+      } else {
+        logToHost('info', 'No complete tool_call in this generation');
+        postEvent('generation_complete', { text: _accumulatedText });
       }
-      logToHost('info', 'FINISHED detected with tool_call marker, posting generation_complete');
-      logToHost('debug', 'Accumulated text length: ' + _accumulatedText.length);
-      postEvent('generation_complete', { text: _accumulatedText });
       _accumulatedText = '';
     }
   }
@@ -218,9 +232,10 @@
       if (!isOurs) {
         const msg = extractUserMessage(body);
         const convId = extractConversationId(body);
+        
         if (msg) {
           _accumulatedText = '';
-              postEvent('send_detected', { message: msg, conversationId: convId });
+          postEvent('send_detected', { message: msg, conversationId: convId });
         }
       }
     }
@@ -258,6 +273,9 @@
               }
             }
           }
+          
+          // 流结束（仅日志，实际完成由 FINISHED 触发）
+          logToHost('debug', 'Stream reader done');
           break;
         }
         const lines = buffer.split('\n');
@@ -306,9 +324,10 @@
       if (!isOurs) {
         const msg = extractUserMessage(bodyStr);
         const convId = extractConversationId(bodyStr);
+        
         if (msg) {
           _accumulatedText = '';
-              postEvent('send_detected', { message: msg, conversationId: convId });
+          postEvent('send_detected', { message: msg, conversationId: convId });
         }
       }
 
